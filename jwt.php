@@ -1,9 +1,10 @@
 <?php
-// Tidak ada secret key
-$secret = null;
+$secret = 'insecure_secret_key';
 
 /**
  * Encode data to Base64 URL format.
+ * Perintah strtr(base64_encode($data), '+/', '-_') akan mengubah + dengan -, / dengan _. Hal tsb. dikarenakan + dan / tidak aman untuk digunakan pada URL.
+ * Kemudian, karakter = di akhir string akan dihapuskan.
  */
 function base64UrlEncode($data)
 {
@@ -12,6 +13,8 @@ function base64UrlEncode($data)
 
 /**
  * Decode from Base64 URL format.
+ * Perintah strtr($data, '-_', '+/') akan mengubah - menjadi +, dan _ menjadi / (sesaui standar sblm decode).
+ * Kemudian, akan ditambahkan padding = jika length dari data bukan merupakan kelipatan 4. Sebab, Format Base64 membutuhkan length kelipatan 4 untuk melakukan decoding.
  */
 function base64UrlDecode($data)
 {
@@ -23,15 +26,25 @@ function base64UrlDecode($data)
  */
 function create_jwt($payload)
 {
-    // Algorithm diatur menjadi None (tidak ada signature)
-    $header = json_encode(['typ' => 'JWT', 'alg' => 'none']);
+    global $secret;
+    // Membentuk header token berupa JSON yang mendefinisikan tipenya sbg. JWT dan menggunakan algorithm hashing HS256. 
+    $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+    // Mengubah payload yang berada dalam bentuk array menjadi string JSON.
     $payload = json_encode($payload);
 
+    // Encode header and payload to Base64 URL format, dengan tujuan agar dapat ditransmisikan dengan aman via URL.
     $encodedHeader = base64UrlEncode($header);
     $encodedPayload = base64UrlEncode($payload);
 
-    // Mengembalikan token tanpa signature
-    return "$encodedHeader.$encodedPayload.";
+    /*Create signature token dengan cara:
+    * 1. Menggabungkan encorderHeader & encoderPayload melalui tanda .
+      2. Menggunakan algorithm hashing HMAC-SHA256 + secret key agar dapat membentuk hash signature. 
+      3. Hasil hash diconvert ke dalam format Base64 URL-Safe.
+    */
+    $signature = base64UrlEncode(hash_hmac('sha256', "$encodedHeader.$encodedPayload", $secret, true));
+
+    // Return the JWT in the format: header.payload.signature
+    return "$encodedHeader.$encodedPayload.$signature";
 }
 
 /**
@@ -39,23 +52,19 @@ function create_jwt($payload)
  */
 function verify_jwt($token)
 {
+    global $secret;
+    // Membagi token menjadi 3 bagian (header, payload, signature) based on sign .
     $parts = explode('.', $token);
-
-    // Membagi token menjadi header dan payload saja (tidak ada signature)
-    if (count($parts) < 2) {
+    // Jikalau gagal, maka token dianggap invalid.
+    if (count($parts) != 3)
         return false;
-    }
+    //Jikalau berhasil, maka masing-masing bagian token akan disimpan ke dalam variabel terkait.
+    list($encodedHeader, $encodedPayload, $signature) = $parts;
 
-    list($encodedHeader, $encodedPayload) = array_pad($parts, 2, null);
-
-    // Validasi None Algorithm
-    $header = json_decode(base64UrlDecode($encodedHeader), true);
-    if (isset($header['alg']) && $header['alg'] === 'none') {
-        return true;
-    }
-
-    // Tidak memvalidasi signature karena mmg tidak ada signature
-    return false;
+    // Validate signature (sama seperti sebelumnya, berupa proses pembentukkan signature)
+    $validSignature = base64UrlEncode(hash_hmac('sha256', "$encodedHeader.$encodedPayload", $secret, true));
+    // Bila signature yang asli sama dengan signature verification, maka token dianggap valid.
+    return ($signature === $validSignature);
 }
 
 /**
@@ -63,30 +72,17 @@ function verify_jwt($token)
  */
 function decode_payload($token)
 {
+    // Membagi token menjadi 3 bagian (header, payload, signature) based on sign .
     $parts = explode('.', $token);
-
-    // Membagi token menjadi 2 bagian, yaitu header dan payload saja
-    if (count($parts) < 2) {
+    // Jikalau gagal, maka token dianggap invalid.
+    if (count($parts) != 3)
         return null;
-    }
+    /* Jikalau berhasil, maka nilai payload akan didecode. 
+    * Kemudian, keseluruhan string JSON payload akan diconvert menjadi array. 
+    */
     return json_decode(base64UrlDecode($parts[1]), true);
 }
+?> 
 
-// Simpan JWT ke dalam cookie tanpa HttpOnly atau Secure
-function set_jwt_cookie($jwt)
-{
-    // Tidak menggunakan Secure/HttpOnly dalam cookie
-    setcookie("session", $jwt, time() + 3600, "/");
-}
 
-// Payload
-$payload = [
-    "name" => "user",
-    "role" => "admin",
-];
-
-$jwt = create_jwt($payload);
-set_jwt_cookie($jwt);
-
-echo "JWT token created and stored in cookie.";
-?>
+ 
