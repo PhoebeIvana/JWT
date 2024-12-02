@@ -20,7 +20,7 @@ $is_logged_in = isset($_COOKIE['personal-session']) && verify_jwt($_COOKIE['pers
 // Jika tidak, gunakan default "Guest"
 if ($is_logged_in) {
     $payload = decode_payload($_COOKIE['personal-session']);
-    $username = $payload['name'] ?? 'Guest';
+    $username = $payload['username'] ?? 'Guest';
 } else {
     $username = 'Guest';
 }

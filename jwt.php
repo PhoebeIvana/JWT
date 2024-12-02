@@ -89,7 +89,7 @@ if ($username) {
 
 // Payload JWT tanpa expired time
 $payload = [
-    "name" => $username,
+    "username" => $username,
     "role" => $role
 ];
 
