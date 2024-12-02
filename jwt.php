@@ -1,4 +1,5 @@
 <?php
+// VULNERABLE CODE 
 // Tidak ada secret key 
 $secret = null;
 
