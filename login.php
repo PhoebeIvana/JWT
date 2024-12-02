@@ -5,28 +5,41 @@ include('jwt.php');
 
 $error_message = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'] ?? null;
+    $password = $_POST['password'] ?? null;
 
-    // Cek user di database
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
+    // Cek apakah username dan password diisi
+    if ($username && $password) {
+        // Cek user di database
+        $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
 
-    // Validasi password
-    if ($user && password_verify($password, $user['password'])) {
-        // Buat JWT token
-        $token = create_jwt(['username' => $username, 'role' => $user['role']]);
+        // Validasi password
+        if ($user && password_verify($password, $user['password'])) {
+            // Buat payload JWT dengan username dan role dari database
+            $payload = [
+                "username" => $user['username'], // Ambil dari database
+                "role" => $user['role'],        // Ambil dari database
+            ];
 
-        // Simpan token di cookie
-        setcookie('personal-session', $token, time() + 3600, '/'); 
-        header('Location: index.php');
-        exit;
+            // Buat token JWT
+            $jwt = create_jwt($payload);
+
+            // Simpan token di cookie
+            set_jwt_cookie($jwt);
+
+            // Redirect ke halaman utama
+            header('Location: index.php');
+            exit;
+        } else {
+            $error_message = "Invalid username or password!";
+        }
     } else {
-        $error_message = "Invalid credentials!";
+        $error_message = "Please fill in all fields!";
     }
 }
 ?>
@@ -53,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="container">
         <h2>Login</h2>
         <?php if ($error_message): ?>
-            <p class="error"><?php echo $error_message; ?></p>
+            <p class="error"><?php echo htmlspecialchars($error_message); ?></p>
         <?php endif; ?>
         <form method="POST" action="login.php">
             <label for="username">Username:</label>
