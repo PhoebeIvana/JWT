@@ -21,8 +21,10 @@ $is_logged_in = isset($_COOKIE['personal-session']) && verify_jwt($_COOKIE['pers
 if ($is_logged_in) {
     $payload = decode_payload($_COOKIE['personal-session']);
     $username = $payload['username'] ?? 'Guest';
+    $role = $payload['role'] ?? 'guest';
 } else {
     $username = 'Guest';
+    $role = 'guest';
 }
 ?>
 
@@ -38,13 +40,35 @@ if ($is_logged_in) {
     <link rel="stylesheet" href="css/style.css">
 </head>
 
+<style>
+    .navbar {
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;
+        padding: 10px 20px; 
+    }
+
+    .logo {
+        margin: 0; 
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 15px;
+    }
+</style>
+
 <body>
     <header>
         <div class="navbar">
             <h1 class="logo">WikiWow</h1>
             <nav class="nav-links">
                 <a href="index.php"><i class="fas fa-home"></i> Home</a>
+                <a href="admin.php"><i class="fas fa-cogs"></i> Admin Panel</a>
                 <?php if ($is_logged_in): ?>
+                    <?php if ($role === 'admin'): ?>
+                        <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                    <?php endif; ?>
                     <a href="profile.php"><i class="fas fa-user"></i> My Profile</a>
                     <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 <?php else: ?>
