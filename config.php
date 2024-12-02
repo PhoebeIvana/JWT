@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "wikiWow";
+$dbname = "jwt";
 
 // Membuat koneksi ke database
 $conn = new mysqli($servername, $username, $password, $dbname);

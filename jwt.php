@@ -73,7 +73,7 @@ function decode_payload($token)
  */
 function set_jwt_cookie($jwt)
 {
-    setcookie("session", $jwt, time() + 3600, "/"); // Tidak ada Secure atau HttpOnly
+    setcookie("personal-session", $jwt, time() + 3600, "/"); // Tidak ada Secure atau HttpOnly
 }
 
 // Ambil username dari input POST (i.e. dari form login)

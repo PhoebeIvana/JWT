@@ -9,15 +9,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
+    // Cek user di database
     $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
 
+    // Validasi password
     if ($user && password_verify($password, $user['password'])) {
+        // Buat JWT token
         $token = create_jwt(['username' => $username, 'role' => $user['role']]);
-        $_SESSION['token'] = $token;
+
+        // Simpan token di cookie
+        setcookie('personal-session', $token, time() + 3600, '/'); 
         header('Location: index.php');
         exit;
     } else {

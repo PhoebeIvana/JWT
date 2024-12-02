@@ -4,12 +4,12 @@ include('config.php');
 include('jwt.php');
 
 // mengecek apakah user terautentikasi atau tidak
-if (!isset($_SESSION['token']) || !verify_jwt($_SESSION['token'])) {
+if (!isset($_COOKIE['personal-session']) || !verify_jwt($_COOKIE['personal-session'])) {
     header('Location: login.php?error=not_logged_in');
     exit;
 }
 
-$user_data = decode_payload($_SESSION['token']);
+$user_data = decode_payload($_COOKIE['personal-session']);
 ?>
 
 <!DOCTYPE html>

@@ -4,7 +4,7 @@ include('config.php');
 include('jwt.php');
 
 /* digunakan untuk memeriksa apakah JWT token terdapat di sesi tsb atau tidak.*/
-if (!isset($_SESSION['token']) || !verify_jwt($_SESSION['token'])) {
+if (!isset($_COOKIE['personal-session']) || !verify_jwt($_COOKIE['personal-session'])) {
     header('Location: login.php');
     exit;
 }
@@ -12,8 +12,8 @@ if (!isset($_SESSION['token']) || !verify_jwt($_SESSION['token'])) {
 /* Terdapat:
 1. proses encoding untuk mengetahui data data dari user (uname & role)
 2. Apakah role admin? jika bukan maka akses akan ditolak*/
-$user_data = decode_payload($_SESSION['token']);
-if ($user_data['role'] !== 'admin') {
+$user_data = decode_payload($_COOKIE['personal-session']);
+if (!$user_data || $user_data['role'] !== 'admin') {
     echo "You are not authorized to access this page.";
     exit;
 }

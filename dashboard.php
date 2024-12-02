@@ -3,15 +3,15 @@ session_start();
 include('config.php');
 include('jwt.php');
 
-// Mengautentikasi apakah terdapat token JWT yang valid pada session? Dialkukan verifikasi melalui proses pemanggilan verify_jwt function.
-if (!isset($_SESSION['token']) || !verify_jwt($_SESSION['token'])) {
-    // jikalau invalid, maka akan dikembalikan ke login page.
+// Mengautentikasi apakah terdapat token JWT yang valid pada cookie
+if (!isset($_COOKIE['personal-session']) || !verify_jwt($_COOKIE['personal-session'])) {
+    // Jika token tidak valid atau tidak ditemukan, redirect ke login
     header('Location: login.php');
     exit;
 }
 
 // Token JWT akan didecode; kemudian mengecek apakah role dari user admin?
-$user_data = decode_payload($_SESSION['token']);
+$user_data = decode_payload($_COOKIE['personal-session']);
 if ($user_data['role'] !== 'admin') {
     // Jikalau tidak, maka tidak diperbolehkan membuka laman dashboard.
     echo "You are not authorized to access this page.";

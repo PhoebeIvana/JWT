@@ -12,12 +12,18 @@ $stmt = $conn->prepare("SELECT * FROM articles WHERE title LIKE ?");
 $stmt->bind_param("s", $search);
 $stmt->execute();
 $result = $stmt->get_result();
-/*Mengecek apakah terdapat token JWT yang tersimpan pada session tsb? 
-Lalu, token JWT tersebut akan divalidasi eksistensinya. */
-$is_logged_in = isset($_SESSION['token']) && verify_jwt($_SESSION['token']);
-// Jika ya, maka payload dari token JWT akan didecode, dan nilai key `username` akan diakses.
-// Jika tidak, maka dianggap bahwa tidak ada user terkait dengan session tsb., entah karena user tidak melakukan login, atau karena tokennya invalid.
-$username = $is_logged_in ? decode_payload($_SESSION['token'])['username'] : null;
+
+/* Mengambil token dari cookie */
+$is_logged_in = isset($_COOKIE['personal-session']) && verify_jwt($_COOKIE['personal-session']);
+
+// Jika ada token, decode payload JWT untuk mendapatkan `username`
+// Jika tidak, gunakan default "Guest"
+if ($is_logged_in) {
+    $payload = decode_payload($_COOKIE['personal-session']);
+    $username = $payload['name'] ?? 'Guest';
+} else {
+    $username = 'Guest';
+}
 ?>
 
 <!DOCTYPE html>
@@ -50,11 +56,7 @@ $username = $is_logged_in ? decode_payload($_SESSION['token'])['username'] : nul
     </header>
 
     <div class="container">
-        <?php if ($is_logged_in): ?>
-            <h1>Welcome, <?php echo htmlspecialchars($username); ?>!</h1>
-        <?php else: ?>
-            <h1>Welcome to WikiWow</h1>
-        <?php endif; ?>
+        <h1>Welcome to WikiWow, <?php echo htmlspecialchars($username); ?>!</h1>
         <form method="GET" action="index.php">
             <input type="text" name="search"
                 value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>"
